@@ -1,0 +1,23 @@
+{% load static %}
+<script type="module" src="{% static 'js/components/calculator/calculator.js' %}"></script>
+
+<div id="calculator-page" class="flex-1 relative select-none">
+    <svg class="w-full h-full rounded-2xl bg-white shadow-xl border border-gray-300">
+    </svg>
+    <div class="absolute top-0 left-0 w-full h-full p-2 pointer-events-none">
+        <!-- Overlay -->
+        <details class="bg-gray-100 border border-gray-300 w-min rounded-lg shadow-lg pointer-events-auto" open>
+            <summary class="cursor-pointer pt-1 pb-1 pl-2 pr-2 border-b border-gray-300 whitespace-nowrap">Outils</summary>
+            <div class="p-2 flex flex-col gap-2">
+                <button class="pt-1 pb-1 pl-1 pr-2 bg-blue-500 text-white flex items-center justify-center cursor-pointer whitespace-nowrap">
+                    <span class="material-symbols-rounded">add</span>
+                    Ajouter un bloc
+                </button>
+                <button id="reset-view-button" class="pt-1 pb-1 pl-1 pr-2 bg-blue-500 text-white flex items-center justify-center cursor-pointer whitespace-nowrap">
+                    <span class="material-symbols-rounded">refresh</span>
+                    Réinitialiser la vue
+                </button>
+            </div>
+        </details>
+    </div>
+</div>

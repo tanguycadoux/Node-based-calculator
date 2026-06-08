@@ -1,0 +1,11 @@
+{% extends 'calculator/base.html' %}
+
+{% block title %}Calculator{% endblock %}
+
+{% block content %}
+<main class="h-screen p-4 bg-gray-100 flex flex-col gap-4">
+    <h1 class="text-3xl font-bold font-serif">Calculator</h1>
+
+    {% include 'calculator/components/calculator/calculator.html' %}
+</main>
+{% endblock %}
