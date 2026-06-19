@@ -6,7 +6,7 @@ export function resetViewBox(board) {
     board.setAttribute('viewBox', `${-viewW/2} ${-viewH/2} ${viewW} ${viewH}`);
 }
 
-function pixelsToViewBox(board, dx, dy) {
+export function pixelsToViewBox(board, dx, dy) {
     const rect = board.getBoundingClientRect();
     const viewBox = board.viewBox.baseVal;
     return {
@@ -39,6 +39,6 @@ export function initDrag(board) {
         last = { x: e.clientX, y: e.clientY };
     });
 
-    board.addEventListener('mouseup', () => unDragging());
+    board.addEventListener('mouseup',    () => unDragging());
     board.addEventListener('mouseleave', () => unDragging());
 }
