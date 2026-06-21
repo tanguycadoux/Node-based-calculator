@@ -1,6 +1,6 @@
 export function resetViewBox(board) {
     const w = board.clientWidth, h = board.clientHeight;
-    const minViewWidth = 10;
+    const minViewWidth = 30;
     const viewW = minViewWidth*w/h, viewH = minViewWidth;
 
     board.setAttribute('viewBox', `${-viewW/2} ${-viewH/2} ${viewW} ${viewH}`);

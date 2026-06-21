@@ -4,13 +4,22 @@
 <div id="calculator-page" class="relative select-none">
     <svg class="w-full h-full rounded-2xl bg-white shadow-xl border border-gray-400">
     </svg>
-    <div class="absolute top-0 left-0 w-full h-full p-2 pointer-events-none">
+    <div id="calculator-overlay" class="absolute top-0 left-0 w-full h-full p-2 pointer-events-none">
         <!-- Overlay -->
-        <details class="bg-gray-100 border border-gray-300 w-min rounded-lg shadow-lg pointer-events-auto" open>
+        <details class="bg-gray-100 border border-gray-300 w-min rounded-lg shadow-lg pointer-events-auto mb-2" open>
             <summary class="cursor-pointer pt-1 pb-1 pl-2 pr-2 border-b border-gray-300 whitespace-nowrap">Outils</summary>
             <div class="grid">
                 {% include 'calculator/snippets/basic-button.html' with icon='add' text='Ajouter un bloc' id='add-node-button' %}
                 {% include 'calculator/snippets/basic-button.html' with icon='refresh' text='Réinitialiser la vue' id='reset-view-button' %}
+                {% include 'calculator/snippets/basic-button.html' with icon='refresh' text='Update nodes display' id='update-draw-button' %}
+            </div>
+        </details>
+
+        <details id="overlay-node-options" class="bg-gray-100 border border-gray-300 w-min rounded-lg shadow-lg pointer-events-auto hidden" open>
+            <summary class="cursor-pointer pt-1 pb-1 pl-2 pr-2 border-b border-gray-300 whitespace-nowrap">Node options</summary>
+            <div class="grid">
+                {% include 'calculator/snippets/basic-button.html' with icon='add' text='Ajouter un input socket' id='add-input-socket' %}
+                {% include 'calculator/snippets/basic-button.html' with icon='add' text='Ajouter un output socket' id='add-output-socket' %}
             </div>
         </details>
     </div>

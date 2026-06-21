@@ -3,11 +3,40 @@ import { resetViewBox, initDrag, pixelsToViewBox } from "./viewport.js";
 class Node {
     constructor(id) {
         this.position = {x: 0, y: 0};
-        this.size = {'width': 2, 'height': 2};
+        this.size = {'width': 10, 'height': 10};
         this.id = id;
+        // this.inputSockets = [
+        //     'Couleur',
+        //     'Forme',
+        // ];
+        // this.outputSockets = [
+        //     'Alpha',
+        //     'Beta',
+        //     'Gamma',
+        // ];
+        this.inputSockets  = [];
+        this.outputSockets = [];
+    }
+    
+    static headerSize = 2;
+    static contentSizeWithoutNode = 2;
+    static padding = .4;
+    static socketSize = .6;
+    static fontSize = 1;
+    static strokeWidth = .1;
+
+    #updateSize() {
+        if (this.inputSockets.length == 0 && this.outputSockets.length == 0) {
+            this.size.height = Node.headerSize + Node.contentSizeWithoutNode;
+        }
+        else {
+            const inputSocketsSize  = this.inputSockets.length  * (Node.socketSize + Node.padding) - Node.padding;
+            const outputSocketsSize = this.outputSockets.length * (Node.socketSize + Node.padding) - Node.padding;
+            this.size.height = Node.headerSize + 2*Node.padding + Math.max(inputSocketsSize, outputSocketsSize);
+        }
     }
 
-    draw(board) {
+    draw(layer, board) {
         function initDrag(initPos, group, grabZone, board){
             function unDragging(e) {
                 e.stopPropagation();
@@ -39,38 +68,84 @@ class Node {
             grabZone.addEventListener('mouseup',    (e) => unDragging(e));
             grabZone.addEventListener('mouseleave', (e) => unDragging(e));
         }
+
+        function drawSocket(x, y, text, color, textAlign) {
+            const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
+
+            let textAnchor = 'start';
+            let textXpos = x + (Node.socketSize/2 + Node.padding);
+            if (textAlign == 'right') {
+                textAnchor = 'end';
+                textXpos = x - (Node.socketSize/2 + Node.padding);
+            }
+
+            const fontSize = Node.fontSize/2;
+            group.append(
+                generateCircle(x, y, Node.socketSize/2, color, {'stroke': 'black', 'strokeWidth': Node.strokeWidth}),
+                generateText(textXpos, y + fontSize/3, text, fontSize, textAnchor),
+            );
+            return group;
+        }
+
+        function drawSockets(sockets, x, color, layer, textAlign) {
+            let socketNumber = 0;
+            for (const socket of sockets) {
+                const y = contentUp + Node.padding + Node.socketSize/2 + socketNumber * (Node.padding + Node.socketSize);
+                layer.append(drawSocket(x, y, socket, color, textAlign));
+                socketNumber += 1;
+            }
+        }
+
+        this.#updateSize();
         
-        const left = this.position.x - this.size.width/2
-        const up   = this.position.y - this.size.height/2
+        const left  = this.position.x - this.size.width/2
+        const right = this.position.x + this.size.width/2
+        const up    = this.position.y - this.size.height/2
+        const contentUp = up + Node.headerSize;
         
         let group = document.createElementNS("http://www.w3.org/2000/svg", "g");
-        let background = generateRect(
-            left, up,
-            this.size.width, this.size.height,
-        )
-        
-        let grabZone = document.createElementNS("http://www.w3.org/2000/svg", "g");
-        let grabZoneBackground = generateRect(
-            left, up,
-            this.size.width, this.size.height/4
-        )
-        
-        background.setAttribute('fill', 'lightgray');
-        grabZoneBackground.setAttribute('fill', 'lightgray');
 
-        grabZone.append(
+        let background = newGenerateRect({
+            x: left, y: up,
+            width: this.size.width, height: this.size.height,
+            fill: 'lightgray',
+            stroke: {stroke: 'black', strokeWidth: Node.strokeWidth},
+            cornerRadius: Node.padding,
+        });
+        
+        let header = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        let grabZoneBackground = newGenerateRect({
+            x: left, y: up,
+            width: this.size.width, height: Node.headerSize,
+            fill: 'transparent',
+            stroke: {stroke: 'transparent', strokeWidth: 0},
+        });
+
+        let content = document.createElementNS("http://www.w3.org/2000/svg", "g");
+
+        group.id = `node_${this.id}`
+        
+        header.append(
             grabZoneBackground,
-            generateText(left + .1, up + .4, `Id = ${this.id}`, .3)
+            newGenerateLine({
+                p1: {x: left, y:contentUp}, p2: {x: right, y:contentUp}
+            }),
+            generateText(left + Node.padding, up + Node.padding + Node.fontSize, `Id = ${this.id}`, Node.fontSize),
         );
+
+        drawSockets(this.inputSockets,  left,  'green', content, 'left');
+        drawSockets(this.outputSockets, right, 'red',   content, 'right');
+
         group.append(
             background,
-            grabZone
+            header,
+            content,
         );
 
-        grabZone.style.cursor = 'grab';
-        initDrag(this.position, group, grabZone, board);
+        header.style.cursor = 'grab';
+        initDrag(this.position, group, header, board);
 
-        board.append(group);
+        layer.append(group);
     }
 }
 
@@ -105,35 +180,62 @@ class NodeStore {
     }
 }
 
-function generateLine(point1, point2) {
+function newGenerateLine({
+    p1={x, y}, p2={x, y},
+    stroke={'stroke': 'black', 'strokeWidth': .1},
+}) {
     let line = document.createElementNS("http://www.w3.org/2000/svg", "line");
 
-    line.setAttribute('x1', point1.x);
-    line.setAttribute('x2', point2.x);
-    line.setAttribute('y1', point1.y);
-    line.setAttribute('y2', point2.y);
+    line.setAttribute('x1', p1.x);
+    line.setAttribute('x2', p2.x);
+    line.setAttribute('y1', p1.y);
+    line.setAttribute('y2', p2.y);
 
-    line.setAttribute('stroke', 'black');
-    line.setAttribute('stroke-width', .1);
+    line.setAttribute('stroke', stroke.stroke);
+    line.setAttribute('stroke-width', stroke.strokeWidth);
 
     return line
 }
 
-function generateRect(x, y, width, height) {
+function newGenerateRect({
+    x, y, width, height,
+    fill='white',
+    stroke={'stroke': 'black', 'strokeWidth': .1},
+    cornerRadius=0
+}) {
     let rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
 
     rect.setAttribute('x', x);
     rect.setAttribute('y', y);
     rect.setAttribute('width',  width);
     rect.setAttribute('height', height);
+    
+    rect.setAttribute('fill', fill);
 
-    rect.setAttribute('stroke', 'black');
-    rect.setAttribute('stroke-width', .1);
+    rect.setAttribute('stroke', stroke.stroke);
+    rect.setAttribute('stroke-width', stroke.strokeWidth);
+
+    rect.setAttribute('rx', cornerRadius);
 
     return rect
 }
 
-function generateText(x, y, textContent, fontSize) {
+function generateCircle(x, y, radius, fill='white', stroke={'stroke': 'black', 'strokeWidth': .1}) {
+    let circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+
+    circle.setAttribute('cx', x);
+    circle.setAttribute('cy', y);
+    circle.setAttribute('r', radius);
+
+    circle.setAttribute('fill', fill)
+
+    circle.setAttribute('stroke', stroke.stroke);
+    circle.setAttribute('stroke-width', stroke.strokeWidth);
+
+    return circle
+}
+
+function generateText(x, y, textContent, fontSize, textAnchor='start') {
     let text = document.createElementNS("http://www.w3.org/2000/svg", "text");
 
     text.textContent = textContent;
@@ -141,51 +243,109 @@ function generateText(x, y, textContent, fontSize) {
     text.setAttribute('y', y);
 
     text.setAttribute('font-size', fontSize);
+    text.setAttribute('text-anchor', textAnchor);
     
     text.setAttribute('dominant-baseline', 'auto')
 
     return text
 }
 
-function drawCrosshair(board) {
-    board.append(
-        generateLine({"x": -1, "y":  0}, {"x": 1, "y": 0}),
-        generateLine({"x":  0, "y": -1}, {"x": 0, "y": 1})
-    );
+function drawbackgroundLayer(board) {
+    const bgLayer = document.createElementNS("http://www.w3.org/2000/svg", "g");
+
+    bgLayer.id = 'background_layer';
+    drawCrosshair(bgLayer);
+    board.append(bgLayer)
 }
 
-function createNode(board, nodesStore) {
-    let nodeIndex = 0;
+function drawMainLayer(board) {
+    const mainLayer = document.createElementNS("http://www.w3.org/2000/svg", "g");
+
+    mainLayer.id = 'main_layer';
+    board.append(mainLayer)
+
+    return mainLayer
+}
+
+function drawCrosshair(layer) {
+    const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
+
+    group.id = 'global_crosshair';
+    group.append(
+        newGenerateLine({
+            p1: {x: -1, y: 0}, p2: {x: 1, y: 0}
+        }),
+        newGenerateLine({
+            p1: {x: 0, y: -1}, p2: {x: 0, y: 1}
+        }),
+    );
+
+    layer.append(group);
+}
+
+function createNode(nodesStore) {
+    let nodeId = 0;
     for (const id of nodesStore.ids()) {
-        nodeIndex = id+1;
+        nodeId = id+1;
     }
     
-    const node = new Node(nodeIndex);
+    const node = new Node(nodeId);
     nodesStore.add(node);
 
-    drawNodes(board, nodesStore);
+    return nodeId
 }
 
-function drawNodes(board, nodesStore) {
-    clearBoard(board);
+function drawNodes(board, nodesStore, selectedList) {
+    const mainLayer = board.getElementById('main_layer');
+
+    mainLayer.innerHTML = "";
+    // D'abord celles pas sélectionnées
     for (const node of nodesStore.nodes()) {
-        node.draw(board);
+        if (selectedList.includes(node.id)) {
+            continue
+        }
+        node.draw(mainLayer, board);
+    }
+    // Puis celles sélectionnées
+    for (const node of nodesStore.nodes()) {
+        if (selectedList.includes(node.id)) {
+            node.draw(mainLayer, board);
+        }
     }
 }
 
-function clearBoard(board) {
-    board.innerHTML = "";
+function selectNode(id, nodesStore, selectedList) {
+    if (!nodesStore.has(id)) {
+        throw new Error(`Node ${id} cannot be selected: not found.`);
+    }
+    const options = document.getElementById('overlay-node-options');
+    options.classList.remove('hidden');
+    options.getElementsByTagName('summary')[0].textContent = `Node ${id} options`;
+    selectedList.push(id);
 }
 
 window.addEventListener("DOMContentLoaded", function() {
     const calculatorPage = document.getElementById("calculator-page");
     const calculatorBoard = calculatorPage.querySelector('svg');
-    const nodesStore = new NodeStore();
 
     resetViewBox(calculatorBoard);
-    drawCrosshair(calculatorBoard);
+    drawbackgroundLayer(calculatorBoard);
+    const mainLayer = drawMainLayer(calculatorBoard);
     initDrag(calculatorBoard);
 
     document.getElementById('reset-view-button').addEventListener('click', () => resetViewBox(calculatorBoard));
-    document.getElementById('add-node-button').addEventListener('click', () => createNode(calculatorBoard, nodesStore));
+    document.getElementById('add-node-button').addEventListener('click', () => {
+        const id = createNode(nodesStore);
+        selectedNodes = [];
+        selectNode(id, nodesStore, selectedNodes);
+        drawNodes(calculatorBoard, nodesStore, selectedNodes);
+    });
+    document.getElementById('update-draw-button').addEventListener('click', () => drawNodes(calculatorBoard, nodesStore, selectedNodes));
 });
+
+const nodesStore = new NodeStore();
+let selectedNodes = [];
+
+window.debug = {
+    selectNode: (id) => {selectedNodes = []; selectNode(id, nodesStore, selectedNodes); console.log(selectedNodes);},
+}
